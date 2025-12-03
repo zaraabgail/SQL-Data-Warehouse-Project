@@ -1,20 +1,20 @@
---making the new datawarehouse using the medallion method
+-- Drop if exists, then create new DB and schemas
+IF DB_ID('DataWareHouse') IS NOT NULL
+BEGIN
+    ALTER DATABASE [DataWareHouse] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE [DataWareHouse];
+END;
+GO
 
-USE master;
-go
+CREATE DATABASE [DataWareHouse];
+GO
 
-if exists (select 1 from sys.databases where name = "DataWareHouse")
-begin
-  alter database DataWareHouse set single_user with rollback immediate
+USE [DataWareHouse];
+GO
 
-
-CREATE database DataWareHouse
-
-use DataWareHouse;
-
-create schema bronze;
-go
-create schema silver;
-go
-create schema gold;
-go
+CREATE SCHEMA [bronze];
+GO
+CREATE SCHEMA [silver];
+GO
+CREATE SCHEMA [gold];
+GO
