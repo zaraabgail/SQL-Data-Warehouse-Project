@@ -141,3 +141,44 @@ select * from silver.crm_cust_info
 
 SELECT cst_lastname from silver.crm_cust_info
 where cst_lastname != TRIM(cst_lastname);
+
+
+
+SELECT * FROM bronze.crm_prd_id
+
+SELECT prd_id , COUNT(*) 
+FROM bronze.crm_prd_id
+GROUP BY prd_id 
+HAVING COUNT(*) >1 or prd_id is NULL;
+-- missing/duplicate ids
+
+SELECT
+	prd_id,
+	prd_key,
+	REPLACE(SUBSTRING(prd_key, 1,5), '-','_') as cat_id, -- this is to match the keys with the erp px cat g1v2 table
+	SUBSTRING(prd_key, 7, LEN(prd_key)) AS prd_key, -- to join with sales details table
+	prd_nm,
+	ISNULL(prd_cost, 0) AS prd_cost,
+	CASE WHEN UPPER(TRIM(prd_line)) = 'M' THEN 'Mountain'
+		WHEN UPPER(TRIM(prd_line)) = 'R' THEN 'Road'
+		WHEN UPPER(TRIM(prd_line)) = 'S' THEN 'other Sales'
+		WHEN UPPER(TRIM(prd_line)) = 'T' THEN 'Touring'
+		ELSE 'n/a'
+	END AS prd_line,
+	prd_start_dt,
+	prd_end_dt
+FROM bronze.crm_prd_id;
+
+-- checking for nulls or negative numbers
+SELECT prd_cost
+FROM bronze.crm_prd_id
+WHERE prd_cost < 0  OR prd_cost IS NULL;
+
+-- checking unique values
+SELECT DISTINCT prd_line
+FROM bronze.crm_prd_id;
+
+-- checking for invalid date orders
+SELECT *
+FROM bronze.crm_prd_id
+WHERE prd_start_dt > prd_end_dt
