@@ -74,3 +74,57 @@ CREATE TABLE silver.erp_px_cat_g1v1(
 	dwh_create_date DATETIME2 DEFAULT GETDATE()
 );
 
+-- checking data quality of cust info table
+SELECT * from bronze.crm_cust_info;
+
+-- finding if all the keys are unique
+select cst_id, COUNT(*) 
+from bronze.crm_cust_info 
+group by cst_id 
+having count(*) >1 or cst_id is NULL;
+
+-- checking data consistency for binary columns
+SELECT DISTINCT cst_gndr, cst_marital_status 
+FROM bronze.crm_cust_info;
+
+-- query to check unwanted spaces
+SELECT cst_firstname from bronze.crm_cust_info
+where cst_firstname != TRIM(cst_firstname);
+
+SELECT cst_lastname from bronze.crm_cust_info
+where cst_lastname != TRIM(cst_lastname);
+
+-- cleaning the data
+INSERT INTO silver.crm_cust_info (
+	cst_id,
+	cst_key,
+	cst_firstname,
+	cst_lastname,
+	cst_marital_status,
+	cst_gndr,
+	cst_create_date)
+
+SELECT
+cst_id,
+cst_key,
+TRIM(cst_firstname) as cst_firstname,
+TRIM(cst_lastname) as cst_lastname,
+
+CASE WHEN UPPER(TRIM(cst_marital_status)) = 'M' THEN 'Married'
+	WHEN UPPER(TRIM(cst_marital_status)) = 'S' THEN 'Single'
+	ELSE 'n/a'
+END cst_marital_status,
+
+CASE WHEN UPPER(TRIM(cst_gndr)) = 'F' THEN 'Female'
+	WHEN UPPER(TRIM(cst_gndr)) = 'M' THEN 'Male'
+	ELSE 'n/a'
+END cst_gndr,
+
+cst_create_date
+FROM
+(
+	SELECT *,
+	ROW_NUMBER() OVER (PARTITION BY cst_id ORDER BY cst_create_date DESC) as flag_last
+	from bronze.crm_cust_info
+	WHERE cst_id IS NOT NULL)t
+	WHERE flag_last = 1;
